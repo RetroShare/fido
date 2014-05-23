@@ -18,8 +18,7 @@
 #include "p3Fido.h"
 #include "helpers.h"
 
-#include "pqi/p3linkmgr.h"
-#include "retroshare/rsturtle.h"
+#include <retroshare/rsmsgs.h>
 
 #include <mimetic/mimetic.h>
 
@@ -62,6 +61,7 @@ void p3Fido::pollMaildir()
         QString fullname = maildirPath + '/' + filename;
         std::cerr << "Fido: Maildir entry: " << filename.toStdString() << std::endl;
         sendMail( fullname.toUtf8() );
+        remove( fullname.toUtf8() );
     }
 }
 
@@ -85,8 +85,21 @@ void p3Fido::sendMail( const char * filename )
 
     mimetic::MimeEntityList& parts = me.body().parts();
     mimetic::MimeEntityList::iterator mbit = parts.begin();
-    mimetic::MimeEntity * pme = *mbit;
-    std::ostringstream o;
-    o << *pme;
-    std::string bodyText = o.str();
+
+    std::string bodyText;
+    if( mbit != parts.end() ){
+        mimetic::MimeEntity * pme = *mbit;
+        std::ostringstream o;
+        o << *pme;
+        bodyText = o.str();
+    }
+
+    std::wstring wBodyText( bodyText.begin(), bodyText.end() );
+    std::wstring wSubject( subject.begin(), subject.end() );
+
+    MessageInfo mi;
+    mi.title = wSubject;
+    mi.msg = wBodyText;
+    mi.msgto.push_back( rsAddr );
+    rsMsgs->MessageSend(mi);
 }
