@@ -23,8 +23,13 @@ along with Zero Reserve. If not, see <http://www.gnu.org/licenses/>.
 
 class p3Fido;
 
+extern "C" {
+    void * RETROSHARE_PLUGIN_provide();
+};
+
 class FidoPlugin: public RsPlugin
 {
+    friend void * RETROSHARE_PLUGIN_provide();
 public:
     FidoPlugin() ;
     virtual ~FidoPlugin() {}

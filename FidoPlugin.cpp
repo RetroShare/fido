@@ -28,13 +28,13 @@
 
 
 
-FidoPlugin * g_FidoPlugin;
+FidoPlugin * FidoPlugin::fidoPlugin;
 
 extern "C" {
-	void *RETROSHARE_PLUGIN_provide()
+    void * RETROSHARE_PLUGIN_provide()
 	{
-        g_FidoPlugin = new FidoPlugin() ;
-        return (void*) g_FidoPlugin;
+        FidoPlugin::fidoPlugin = new FidoPlugin() ;
+        return (void*) FidoPlugin::fidoPlugin;
 	}
 	// This symbol contains the svn revision number grabbed from the executable. 
 	// It will be tested by RS to load the plugin automatically, since it is safe to load plugins
@@ -58,6 +58,7 @@ void FidoPlugin::getPluginVersion(int& major,int& minor,int& svn_rev) const
     svn_rev = SVN_REVISION_NUMBER ;
 }
 
+
 FidoPlugin::FidoPlugin()
 {
 }
@@ -79,9 +80,6 @@ RsPQIService * FidoPlugin::rs_pqi_service() const
     if(m_Fido == NULL){
         m_Fido = new p3Fido(m_PlugInHandler ) ;
     }
-
-    // this should normally return the new pqi service, but our Fido is not derived from RsPQIService
-    // creating the object here, anyway.
     return m_Fido;
 }
 
