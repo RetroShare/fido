@@ -20,7 +20,12 @@
 #include "pqi/p3linkmgr.h"
 #include "retroshare/rsturtle.h"
 
+#include <QDir>
+#include <QStringList>
+
+#include <fstream>
 #include <iostream>
+
 
 static const uint16_t RS_SERVICE_TYPE_FIDO_PLUGIN = 0xBEEE;
 static const uint32_t CONFIG_TYPE_FIDO_PLUGIN     = 0xDEADBEEE;
@@ -32,5 +37,25 @@ p3Fido::p3Fido( RsPluginHandler *pgHandler ) :
 
 int p3Fido::tick()
 {
+    pollMaildir();
     return 0;
+}
+
+
+void p3Fido::pollMaildir()
+{
+    QString home = getenv( "HOME" );
+    QString maildirPath = home + "/Maildir/new";
+    QDir maildir( maildirPath );
+    if( !maildir.exists() ){
+        std::cerr << "Fido: Maildir " << maildirPath.toStdString() << " does not exist!" << std::endl;
+        return;
+    }
+    QStringList files = maildir.entryList();
+
+    for( QStringList::ConstIterator it = files.begin(); it != files.end(); it++ ){
+        QString filename = *it;
+        if( filename[0] == '.' ) continue;
+        std::cerr << "Fido: Maildir entry: " << filename.toStdString() << std::endl;
+    }
 }

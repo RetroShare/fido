@@ -32,6 +32,8 @@ public:
 
     virtual int tick();
 
+private:
+    void pollMaildir();
 };
 
 #endif // P3TORTOISERRS_H
