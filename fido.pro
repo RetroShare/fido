@@ -7,13 +7,15 @@ CONFIG += qt \
 
 SOURCES = \
     p3Fido.cpp \
-    FidoPlugin.cpp
+    FidoPlugin.cpp \
+    helpers.cpp
 
 DEFINES += ZR_TESTNET
 
 HEADERS = \
     p3Fido.h \
-    FidoPlugin.h
+    FidoPlugin.h \
+    helpers.h
 
 LIBS += -lmimetic
 

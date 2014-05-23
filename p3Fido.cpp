@@ -16,9 +16,12 @@
 */
 
 #include "p3Fido.h"
+#include "helpers.h"
 
 #include "pqi/p3linkmgr.h"
 #include "retroshare/rsturtle.h"
+
+#include <mimetic/mimetic.h>
 
 #include <QDir>
 #include <QStringList>
@@ -56,6 +59,34 @@ void p3Fido::pollMaildir()
     for( QStringList::ConstIterator it = files.begin(); it != files.end(); it++ ){
         QString filename = *it;
         if( filename[0] == '.' ) continue;
+        QString fullname = maildirPath + '/' + filename;
         std::cerr << "Fido: Maildir entry: " << filename.toStdString() << std::endl;
+        sendMail( fullname.toUtf8() );
     }
+}
+
+
+void p3Fido::sendMail( const char * filename )
+{
+    std::ifstream mailfile( filename, std::ifstream::in );
+    if( !mailfile.good() ){
+        std::cerr << "Fido: Cannot open mail file " << filename << std::endl;
+        return;
+    }
+    mimetic::MimeEntity me( mailfile );
+    std::string to = me.header().to().str();
+    std::vector< std::string > addrParts;
+    Fido::split( to, addrParts, '@' );
+
+    std::string rsAddr = addrParts[ 0 ];
+    std::cerr << "Fido: Forwarding mail to RS address: " << rsAddr << std::endl;
+
+    std::string subject = me.header().subject();
+
+    mimetic::MimeEntityList& parts = me.body().parts();
+    mimetic::MimeEntityList::iterator mbit = parts.begin();
+    mimetic::MimeEntity * pme = *mbit;
+    std::ostringstream o;
+    o << *pme;
+    std::string bodyText = o.str();
 }

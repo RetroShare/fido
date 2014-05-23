@@ -15,27 +15,17 @@
     along with Fido.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef P3TORTOISERRS_H
-#define P3TORTOISERRS_H
 
+#ifndef HELPERS_H
+#define HELPERS_H
 
-#include "retroshare/rspeers.h"
-#include "plugins/rspqiservice.h"
+#include <string>
+#include <vector>
 
+namespace Fido{
 
-class RsPluginHandler;
+void split(const std::string & s, std::vector< std::string > & v, const char sep );
 
-class p3Fido : public RsPQIService
-{
-public:
-    p3Fido(RsPluginHandler *pgHandler);
+}
 
-    virtual int tick();
-
-private:
-    void pollMaildir();
-    void sendMail( const char * filename );
-};
-
-#endif // P3TORTOISERRS_H
-
+#endif // HELPERS_H
