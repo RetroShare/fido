@@ -15,5 +15,7 @@ HEADERS = \
     p3Fido.h \
     FidoPlugin.h
 
+LIBS += -lmimetic
+
 
 TARGET = Fido
