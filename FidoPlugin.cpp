@@ -59,7 +59,8 @@ void FidoPlugin::getPluginVersion(int& major,int& minor,int& svn_rev) const
 }
 
 
-FidoPlugin::FidoPlugin()
+FidoPlugin::FidoPlugin() :
+    m_Fido( NULL )
 {
 }
 
