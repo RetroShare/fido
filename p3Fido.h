@@ -22,6 +22,8 @@
 #include "retroshare/rspeers.h"
 #include "plugins/rspqiservice.h"
 
+#include <map>
+
 
 class RsPluginHandler;
 
@@ -35,6 +37,9 @@ public:
 private:
     void pollMaildir();
     void sendMail( const char * filename );
+
+private:
+    std::map< std::string, int > m_sentMsgs;
 };
 
 #endif // P3TORTOISERRS_H

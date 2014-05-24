@@ -32,6 +32,8 @@
 static const uint16_t RS_SERVICE_TYPE_FIDO_PLUGIN = 0xBEEE;
 static const uint32_t CONFIG_TYPE_FIDO_PLUGIN     = 0xDEADBEEE;
 
+static const char * MAILDOMAIN = "ns3.ativel.com";
+
 p3Fido::p3Fido( RsPluginHandler *pgHandler ) :
     RsPQIService( RS_SERVICE_TYPE_FIDO_PLUGIN, CONFIG_TYPE_FIDO_PLUGIN, 0, pgHandler )
 {
@@ -73,25 +75,76 @@ void p3Fido::sendMail( const char * filename )
         std::cerr << "Fido: Cannot open mail file " << filename << std::endl;
         return;
     }
+    MessageInfo mi;
     mimetic::MimeEntity me( mailfile );
-    std::string to = me.header().to().str();
-    std::vector< std::string > addrParts;
-    Fido::split( to, addrParts, '@' );
 
-    std::string rsAddr = addrParts[ 0 ];
-    std::cerr << "Fido: Forwarding mail to RS address: " << rsAddr << std::endl;
-
-    std::string hash;
-    if( rsMsgs->getDistantMessageHash( rsAddr, hash ) == false ){
-        std::cerr << "Fido: Cannot convert address " << rsAddr << " into hash" << std::endl;
-        // TODO: bounce message back and return
+    std::string msgId = me.header().messageid().str();
+    std::map< std::string, int >::iterator msgIt = m_sentMsgs.find( msgId );
+    if( msgIt != m_sentMsgs.end() ){ // we had this message already
+        (*msgIt).second--;
+        if( (*msgIt).second == 1 ){
+            m_sentMsgs.erase( msgIt );
+        }
+        return;
     }
 
+
+    int numAddr = 0;
+    mimetic::AddressList & toList = me.header().to();
+    for( mimetic::AddressList::const_iterator it = toList.begin(); it != toList.end(); it++ ){
+        std::string to = (*it).str();
+        std::vector< std::string > addrParts;
+        Fido::split( to, addrParts, '@' );
+
+        if( addrParts[ 1 ] != MAILDOMAIN )
+            continue;
+
+        numAddr++;
+
+        std::string rsAddr = addrParts[ 0 ];
+        rsAddr = rsAddr.substr( rsAddr.find_first_not_of( " " ) );
+
+        std::string destHash;
+        if( rsMsgs->getDistantMessageHash( rsAddr, destHash ) == false ){
+            std::cerr << "Fido: Cannot convert address " << rsAddr << " into hash" << std::endl;
+            // TODO: bounce message back and return?
+        }
+        std::cerr << "Fido: Adding to: hash " << destHash << " for addr " << rsAddr << std::endl;
+        mi.msgto.push_back( destHash );
+    }
+
+    mimetic::AddressList & ccList = me.header().cc();
+    for( mimetic::AddressList::const_iterator it = ccList.begin(); it != ccList.end(); it++ ){
+        std::string cc = (*it).str();
+        std::vector< std::string > addrParts;
+        Fido::split( cc, addrParts, '@' );
+
+        if( addrParts[ 1 ] != MAILDOMAIN )
+            continue;
+
+        numAddr++;
+
+        std::string rsAddr = addrParts[ 0 ];
+        rsAddr = rsAddr.substr( rsAddr.find_first_not_of( " " ) );
+
+        std::string destHash;
+        if( rsMsgs->getDistantMessageHash( rsAddr, destHash ) == false ){
+            std::cerr << "Fido: Cannot convert address " << rsAddr << " into hash" << std::endl;
+            // TODO: bounce message back and return?
+        }
+        std::cerr << "Fido: Adding cc: hash " << destHash << " for addr " << rsAddr << std::endl;
+        mi.msgcc.push_back( destHash );
+    }
+
+    m_sentMsgs[ msgId ] = numAddr;
+
+
     std::string subject = me.header().subject();
+    std::wstring wSubject( subject.begin(), subject.end() );
+    mi.title = wSubject;
 
     mimetic::MimeEntityList& parts = me.body().parts();
     mimetic::MimeEntityList::iterator mbit = parts.begin();
-
     std::string bodyText;
     if( mbit != parts.end() ){
         mimetic::MimeEntity * pme = *mbit;
@@ -99,13 +152,8 @@ void p3Fido::sendMail( const char * filename )
         o << *pme;
         bodyText = o.str();
     }
-
     std::wstring wBodyText( bodyText.begin(), bodyText.end() );
-    std::wstring wSubject( subject.begin(), subject.end() );
-
-    MessageInfo mi;
-    mi.title = wSubject;
     mi.msg = wBodyText;
-    mi.msgto.push_back( hash );
+
     rsMsgs->MessageSend(mi);
 }
