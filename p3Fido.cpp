@@ -81,6 +81,12 @@ void p3Fido::sendMail( const char * filename )
     std::string rsAddr = addrParts[ 0 ];
     std::cerr << "Fido: Forwarding mail to RS address: " << rsAddr << std::endl;
 
+    std::string hash;
+    if( rsMsgs->getDistantMessageHash( rsAddr, hash ) == false ){
+        std::cerr << "Fido: Cannot convert address " << rsAddr << " into hash" << std::endl;
+        // TODO: bounce message back and return
+    }
+
     std::string subject = me.header().subject();
 
     mimetic::MimeEntityList& parts = me.body().parts();
@@ -100,6 +106,6 @@ void p3Fido::sendMail( const char * filename )
     MessageInfo mi;
     mi.title = wSubject;
     mi.msg = wBodyText;
-    mi.msgto.push_back( rsAddr );
+    mi.msgto.push_back( hash );
     rsMsgs->MessageSend(mi);
 }
