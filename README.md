@@ -5,7 +5,7 @@ mail gateway between the Retroshare message network and the SMTP network
 
 Dependencies:
 * Retroshare
-* mimetic (http://www.codesink.org/index.html)
+* mimetic (http://www.codesink.org/index.html). On Debian, simply install libmimetic-dev
 * A Maildir compliant SMTP server
 
 
