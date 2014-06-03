@@ -33,6 +33,8 @@ public:
     p3Fido(RsPluginHandler *pgHandler);
 
     virtual int tick();
+    virtual RsServiceInfo getServiceInfo();
+
 
 private:
     void pollMaildir();

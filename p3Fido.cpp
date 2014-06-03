@@ -29,15 +29,21 @@
 #include <iostream>
 
 
-static const uint16_t RS_SERVICE_TYPE_FIDO_PLUGIN = 0xBEEE;
-static const uint32_t CONFIG_TYPE_FIDO_PLUGIN     = 0xDEADBEEE;
+static const uint16_t RS_SERVICE_TYPE_PLUGIN_FIDO_GW = 0xF1D0;
+static const unsigned int TICK_DELAY = 5; // seconds
 
 static const char * MAILDOMAIN = "ns3.ativel.com";
 
 p3Fido::p3Fido( RsPluginHandler *pgHandler ) :
-    RsPQIService( RS_SERVICE_TYPE_FIDO_PLUGIN, CONFIG_TYPE_FIDO_PLUGIN, 0, pgHandler )
+    RsPQIService( RS_SERVICE_TYPE_PLUGIN_FIDO_GW, TICK_DELAY, pgHandler )
 {
 }
+
+RsServiceInfo p3Fido::getServiceInfo()
+{
+    return RsServiceInfo( RS_SERVICE_TYPE_PLUGIN_FIDO_GW, "FIDO", 0, 0, 0, 1 );
+}
+
 
 int p3Fido::tick()
 {
@@ -103,14 +109,7 @@ void p3Fido::sendMail( const char * filename )
 
         std::string rsAddr = addrParts[ 0 ];
         rsAddr = rsAddr.substr( rsAddr.find_first_not_of( " " ) );
-
-        std::string destHash;
-        if( rsMsgs->getDistantMessageHash( rsAddr, destHash ) == false ){
-            std::cerr << "Fido: Cannot convert address " << rsAddr << " into hash" << std::endl;
-            // TODO: bounce message back and return?
-        }
-        std::cerr << "Fido: Adding to: hash " << destHash << " for addr " << rsAddr << std::endl;
-        mi.msgto.push_back( destHash );
+        mi.rsgxsid_msgto.push_back( RsGxsId( rsAddr ) );
     }
 
     mimetic::AddressList & ccList = me.header().cc();
@@ -126,22 +125,12 @@ void p3Fido::sendMail( const char * filename )
 
         std::string rsAddr = addrParts[ 0 ];
         rsAddr = rsAddr.substr( rsAddr.find_first_not_of( " " ) );
-
-        std::string destHash;
-        if( rsMsgs->getDistantMessageHash( rsAddr, destHash ) == false ){
-            std::cerr << "Fido: Cannot convert address " << rsAddr << " into hash" << std::endl;
-            // TODO: bounce message back and return?
-        }
-        std::cerr << "Fido: Adding cc: hash " << destHash << " for addr " << rsAddr << std::endl;
-        mi.msgcc.push_back( destHash );
+        mi.rsgxsid_msgcc.push_back( RsGxsId( rsAddr ) );
     }
 
     m_sentMsgs[ msgId ] = numAddr;
 
-
-    std::string subject = me.header().subject();
-    std::wstring wSubject( subject.begin(), subject.end() );
-    mi.title = wSubject;
+    mi.title = me.header().subject();
 
     mimetic::MimeEntityList& parts = me.body().parts();
     mimetic::MimeEntityList::iterator mbit = parts.begin();
@@ -152,8 +141,7 @@ void p3Fido::sendMail( const char * filename )
         o << *pme;
         bodyText = o.str();
     }
-    std::wstring wBodyText( bodyText.begin(), bodyText.end() );
-    mi.msg = wBodyText;
+    mi.msg = bodyText;
 
     rsMsgs->MessageSend(mi);
 }
