@@ -28,11 +28,12 @@
 #include <fstream>
 #include <iostream>
 
+static const char * MY_GXSID = "8f5079e2e2958f1e3b6006fb9cf2b5a5";
+static const char * MAILDOMAIN = "ns3.ativel.com";
 
 static const uint16_t RS_SERVICE_TYPE_PLUGIN_FIDO_GW = 0xF1D0;
 static const unsigned int TICK_DELAY = 5; // seconds
 
-static const char * MAILDOMAIN = "ns3.ativel.com";
 
 p3Fido::p3Fido( RsPluginHandler *pgHandler ) :
     RsPQIService( RS_SERVICE_TYPE_PLUGIN_FIDO_GW, TICK_DELAY, pgHandler )
@@ -109,7 +110,8 @@ void p3Fido::sendMail( const char * filename )
 
         std::string rsAddr = addrParts[ 0 ];
         rsAddr = rsAddr.substr( rsAddr.find_first_not_of( " " ) );
-        mi.rsgxsid_msgto.push_back( RsGxsId( rsAddr ) );
+        RsGxsId gxsid( rsAddr );
+        mi.rsgxsid_msgto.push_back( RsGxsId( gxsid ) );
     }
 
     mimetic::AddressList & ccList = me.header().cc();
@@ -125,7 +127,8 @@ void p3Fido::sendMail( const char * filename )
 
         std::string rsAddr = addrParts[ 0 ];
         rsAddr = rsAddr.substr( rsAddr.find_first_not_of( " " ) );
-        mi.rsgxsid_msgcc.push_back( RsGxsId( rsAddr ) );
+        RsGxsId gxsid( rsAddr );
+        mi.rsgxsid_msgcc.push_back( gxsid );
     }
 
     m_sentMsgs[ msgId ] = numAddr;
@@ -142,6 +145,10 @@ void p3Fido::sendMail( const char * filename )
         bodyText = o.str();
     }
     mi.msg = bodyText;
+    RsGxsId mygxsid( MY_GXSID );
+    mi.rsgxsid_srcId = mygxsid;
+    mi.msgflags = 0;
+    mi.msgId = msgId;
 
     rsMsgs->MessageSend(mi);
 }
