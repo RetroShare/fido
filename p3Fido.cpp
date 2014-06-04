@@ -135,15 +135,23 @@ void p3Fido::sendMail( const char * filename )
 
     mi.title = me.header().subject();
 
-    mimetic::MimeEntityList& parts = me.body().parts();
-    mimetic::MimeEntityList::iterator mbit = parts.begin();
     std::string bodyText;
-    if( mbit != parts.end() ){
-        mimetic::MimeEntity * pme = *mbit;
-        std::ostringstream o;
-        o << *pme;
-        bodyText = o.str();
+    std::string contentType = me.header().contentType().str();
+
+    if( contentType.find( "text/plain" ) == std::string::npos ){
+        mimetic::MimeEntityList& parts = me.body().parts();
+        mimetic::MimeEntityList::iterator mbit = parts.begin();
+        if( mbit != parts.end() ){
+            mimetic::MimeEntity * pme = *mbit;
+            std::ostringstream o;
+            o << *pme;
+            bodyText = o.str();
+        }
     }
+    else{
+        bodyText = me.body();
+    }
+
     mi.msg = bodyText;
     RsGxsId mygxsid( MY_GXSID );
     mi.rsgxsid_srcId = mygxsid;
