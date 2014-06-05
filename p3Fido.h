@@ -21,8 +21,11 @@
 
 #include "retroshare/rspeers.h"
 #include "plugins/rspqiservice.h"
+#include <retroshare/rsmsgs.h>
+
 
 #include <map>
+#include <list>
 
 
 class RsPluginHandler;
@@ -39,6 +42,9 @@ public:
 private:
     void pollMaildir();
     void sendMail( const char * filename );
+    void bounceMail( const std::list< std::string > & unknownMailboxes, const MessageInfo & mi );
+    int sendMail( const std::string &to_list, const std::string & raw_mail );
+
 
 private:
     std::map< std::string, int > m_sentMsgs;

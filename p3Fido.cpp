@@ -18,7 +18,7 @@
 #include "p3Fido.h"
 #include "helpers.h"
 
-#include <retroshare/rsmsgs.h>
+#include <retroshare/rsidentity.h>
 
 #include <mimetic/mimetic.h>
 
@@ -28,11 +28,14 @@
 #include <fstream>
 #include <iostream>
 
-static const char * MY_GXSID = "8f5079e2e2958f1e3b6006fb9cf2b5a5";
-static const char * MAILDOMAIN = "ns3.ativel.com";
 
-static const uint16_t RS_SERVICE_TYPE_PLUGIN_FIDO_GW = 0xF1D0;
+static const char * MY_GXSID   = "8f5079e2e2958f1e3b6006fb9cf2b5a5";
+static const char * MAILDOMAIN = "ns3.ativel.com";
+static const char * SENDMAIL   = "/usr/sbin/sendmail";
 static const unsigned int TICK_DELAY = 5; // seconds
+
+// TODO: Remove once this is in RS
+static const uint16_t RS_SERVICE_TYPE_PLUGIN_FIDO_GW = 0xF1D0;
 
 
 p3Fido::p3Fido( RsPluginHandler *pgHandler ) :
@@ -95,6 +98,8 @@ void p3Fido::sendMail( const char * filename )
         return;
     }
 
+    std::list< std::string > unknownMailboxes;
+
 
     int numAddr = 0;
     mimetic::AddressList & toList = me.header().to();
@@ -108,7 +113,13 @@ void p3Fido::sendMail( const char * filename )
 
         std::string rsAddr = mailbox.mailbox();
         RsGxsId gxsid( rsAddr );
-        mi.rsgxsid_msgto.push_back( RsGxsId( gxsid ) );
+        RsIdentityDetails detail;
+        if(!rsIdentity->getIdDetails(gxsid, detail)){
+            mi.rsgxsid_msgto.push_back( RsGxsId( gxsid ) );
+        }
+        else{
+            unknownMailboxes.push_back( mailbox.str() );
+        }
     }
 
     mimetic::AddressList & ccList = me.header().cc();
@@ -122,7 +133,13 @@ void p3Fido::sendMail( const char * filename )
 
         std::string rsAddr = mailbox.mailbox();
         RsGxsId gxsid( rsAddr );
-        mi.rsgxsid_msgcc.push_back( gxsid );
+        RsIdentityDetails detail;
+        if(!rsIdentity->getIdDetails(gxsid, detail)){
+            mi.rsgxsid_msgcc.push_back( gxsid );
+        }
+        else{
+            unknownMailboxes.push_back( mailbox.str() );
+        }
     }
 
     m_sentMsgs[ msgId ] = numAddr;
@@ -130,20 +147,18 @@ void p3Fido::sendMail( const char * filename )
     mi.title = me.header().subject();
 
     std::string bodyText;
-    std::string contentType = me.header().contentType().str();
+    mimetic::ContentType contentType = me.header().contentType();
 
-    if( contentType.find( "text/plain" ) == std::string::npos ){
+    if( contentType.type() == "text" && contentType.subtype() == "plain" ){
+        bodyText = me.body().data();
+    }
+    else{
         mimetic::MimeEntityList& parts = me.body().parts();
         mimetic::MimeEntityList::iterator mbit = parts.begin();
         if( mbit != parts.end() ){
             mimetic::MimeEntity * pme = *mbit;
-            std::ostringstream o;
-            o << *pme;
-            bodyText = o.str();
+            bodyText = pme->body().data();
         }
-    }
-    else{
-        bodyText = me.body();
     }
 
     mi.msg = bodyText;
@@ -152,5 +167,33 @@ void p3Fido::sendMail( const char * filename )
     mi.msgflags = 0;
     mi.msgId = msgId;
 
-    rsMsgs->MessageSend(mi);
+    if( !mi.rsgxsid_msgcc.empty() || !mi.rsgxsid_msgto.empty() ){
+        rsMsgs->MessageSend(mi);
+    }
+
+    if( !unknownMailboxes.empty() )
+        bounceMail( unknownMailboxes, mi );
+}
+
+
+void p3Fido::bounceMail( const std::list< std::string > & unknownMailboxes, const MessageInfo & mi )
+{
+    if( mi.rsgxsid_msgcc.empty() && mi.rsgxsid_msgto.empty() ){ // no RS message was sent.
+
+    }
+
+}
+
+
+int p3Fido::sendMail( const std::string & to_list, const std::string & raw_mail )
+{
+    const std::string cmd = std::string( SENDMAIL ) + ' ' + to_list;
+    FILE * mailpipe = popen( cmd.c_str(), "w" );
+    int retval = fputs( raw_mail.c_str(), mailpipe );
+    if( retval < 0 ){
+        std::cerr << "Fido: Error sending email" << std::endl;
+        pclose( mailpipe );
+        return -10;
+    }
+    return pclose( mailpipe );
 }
