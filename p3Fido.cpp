@@ -99,34 +99,28 @@ void p3Fido::sendMail( const char * filename )
     int numAddr = 0;
     mimetic::AddressList & toList = me.header().to();
     for( mimetic::AddressList::const_iterator it = toList.begin(); it != toList.end(); it++ ){
-        std::string to = (*it).str();
-        std::vector< std::string > addrParts;
-        Fido::split( to, addrParts, '@' );
+        mimetic::Mailbox mailbox = (*it).mailbox();
 
-        if( addrParts[ 1 ] != MAILDOMAIN )
+        if( mailbox.domain() != MAILDOMAIN )
             continue;
 
         numAddr++;
 
-        std::string rsAddr = addrParts[ 0 ];
-        rsAddr = rsAddr.substr( rsAddr.find_first_not_of( " " ) );
+        std::string rsAddr = mailbox.mailbox();
         RsGxsId gxsid( rsAddr );
         mi.rsgxsid_msgto.push_back( RsGxsId( gxsid ) );
     }
 
     mimetic::AddressList & ccList = me.header().cc();
     for( mimetic::AddressList::const_iterator it = ccList.begin(); it != ccList.end(); it++ ){
-        std::string cc = (*it).str();
-        std::vector< std::string > addrParts;
-        Fido::split( cc, addrParts, '@' );
+        mimetic::Mailbox mailbox = (*it).mailbox();
 
-        if( addrParts[ 1 ] != MAILDOMAIN )
+        if( mailbox.domain() != MAILDOMAIN )
             continue;
 
         numAddr++;
 
-        std::string rsAddr = addrParts[ 0 ];
-        rsAddr = rsAddr.substr( rsAddr.find_first_not_of( " " ) );
+        std::string rsAddr = mailbox.mailbox();
         RsGxsId gxsid( rsAddr );
         mi.rsgxsid_msgcc.push_back( gxsid );
     }
