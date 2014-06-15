@@ -16,4 +16,7 @@ Dependencies:
 
 then start Retroshare
 
-
+Fido uses the GXS ID as an address to forward emails into the Retroshare network. So an email must have the format:
+GXS-ID@gateway
+e.g.
+49dc68a38e19c55f07e971bacb12f6b6@ns3.ativel.com
